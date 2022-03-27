@@ -3,7 +3,7 @@ package decisionlog
 import (
 	"context"
 
-	"github.com/open-policy-agent/opa-envoy-plugin/envoyauth"
+	"github.com/peihuanatroche/opa-envoy-plugin/envoyauth"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/plugins"
 	"github.com/open-policy-agent/opa/plugins/logs"

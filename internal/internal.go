@@ -38,9 +38,9 @@ import (
 	iCache "github.com/open-policy-agent/opa/topdown/cache"
 	"github.com/open-policy-agent/opa/util"
 
-	"github.com/open-policy-agent/opa-envoy-plugin/envoyauth"
-	internal_util "github.com/open-policy-agent/opa-envoy-plugin/internal/util"
-	"github.com/open-policy-agent/opa-envoy-plugin/opa/decisionlog"
+	"github.com/peihuanatroche/opa-envoy-plugin/envoyauth"
+	internal_util "github.com/peihuanatroche/opa-envoy-plugin/internal/util"
+	"github.com/peihuanatroche/opa-envoy-plugin/opa/decisionlog"
 )
 
 const defaultAddr = ":9191"

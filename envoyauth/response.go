@@ -8,7 +8,7 @@ import (
 
 	ext_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	ext_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/open-policy-agent/opa-envoy-plugin/internal/util"
+	"github.com/peihuanatroche/opa-envoy-plugin/internal/util"
 	"github.com/open-policy-agent/opa/metrics"
 	"github.com/open-policy-agent/opa/storage"
 )
