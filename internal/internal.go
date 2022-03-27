@@ -293,15 +293,23 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 
 	result, stopeval, err := envoyauth.NewEvalResult()
 	if err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Check() Unable to start new evaluation.")
 		logger.WithFields(map[string]interface{}{"err": err}).Error("Unable to start new evaluation.")
 		return nil, func() *rpc_status.Status { return nil }, err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Check() Started new evaluation successfully.")
 
 	txn, txnClose, err := result.GetTxn(ctx, p.Store())
 	if err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Check() Unable to start new storage transaction.")
 		logger.WithFields(map[string]interface{}{"err": err}).Error("Unable to start new storage transaction.")
 		return nil, func() *rpc_status.Status { return nil }, err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Check() Started new storage transaction successfully.")
 
 	result.Txn = txn
 
@@ -310,6 +318,9 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 	var input map[string]interface{}
 
 	stop := func() *rpc_status.Status {
+		logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+			"******** INFO: Check() About to stop evaluation.")
+
 		stopeval()
 		logErr := p.log(ctx, input, result, err)
 		if logErr != nil {
@@ -324,32 +335,52 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 	}
 
 	if ctx.Err() != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Check() Failed to check request timed out before query execution.")
 		err = errors.Wrap(ctx.Err(), "check request timed out before query execution")
 		return nil, stop, err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Check() Successfully checked request timed out before query execution.")
 
 	input, err = envoyauth.RequestToInput(req, logger, p.cfg.protoSet)
 	if err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Check() RequestToInput() returned error.")
 		return nil, stop, err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Check() RequestToInput() returned successfully.")
 
 	inputValue, err := ast.InterfaceToValue(input)
 	if err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Check() InterfaceToValue() returned error.")
 		return nil, stop, err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Check() InterfaceToValue() returned successfully.")
 
 	if err := envoyauth.Eval(ctx, p, inputValue, result); err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Check() Eval returned error.")
 		evalErr = err
 		return nil, stop, err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Check() Eval returned successfully.")
 
 	resp := &ext_authz_v3.CheckResponse{}
 
 	allowed, err := result.IsAllowed()
 
 	if err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Check() failed to get response status.")
 		return nil, stop, errors.Wrap(err, "failed to get response status")
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Check() successfully got response status.")
 
 	status := int32(code.Code_PERMISSION_DENIED)
 	if allowed {
@@ -361,20 +392,29 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 	case map[string]interface{}:
 		responseHeaders, err := result.GetResponseEnvoyHeaderValueOptions()
 		if err != nil {
+			logger.WithFields(map[string]interface{}{"err": err}).Error("@@@@@@@@ Failed to get response headers.")
 			return nil, stop, errors.Wrap(err, "failed to get response headers")
 		}
+		logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+			"@@@@@@@@ Successfully got response headers.")
 
 		if status == int32(code.Code_OK) {
 
 			headersToRemove, err := result.GetRequestHTTPHeadersToRemove()
 			if err != nil {
+				logger.WithFields(map[string]interface{}{"err": err}).Error("@@@@@@@@ Failed to get request headers to remove.")
 				return nil, stop, errors.Wrap(err, "failed to get request headers to remove")
 			}
+			logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+				"@@@@@@@@ Successfully got request headers to remove.")
 
 			responseHeadersToAdd, err := result.GetResponseHTTPHeadersToAdd()
 			if err != nil {
+				logger.WithFields(map[string]interface{}{"err": err}).Error("@@@@@@@@ Failed to get request headers to send to client.")
 				return nil, stop, errors.Wrap(err, "failed to get response headers to send to client")
 			}
+			logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+				"@@@@@@@@ Successfully got request headers to send to client.")
 
 			resp.HttpResponse = &ext_authz_v3.CheckResponse_OkResponse{
 				OkResponse: &ext_authz_v3.OkHttpResponse{
@@ -386,13 +426,19 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 		} else {
 			body, err := result.GetResponseBody()
 			if err != nil {
+				logger.WithFields(map[string]interface{}{"err": err}).Error("@@@@@@@@ Failed to get response body.")
 				return nil, stop, errors.Wrap(err, "failed to get response body")
 			}
+			logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+				"@@@@@@@@ Successfully got response body.")
 
 			httpStatus, err := result.GetResponseEnvoyHTTPStatus()
 			if err != nil {
+				logger.WithFields(map[string]interface{}{"err": err}).Error("@@@@@@@@ Failed to get response http status.")
 				return nil, stop, errors.Wrap(err, "failed to get response http status")
 			}
+			logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+				"@@@@@@@@ Successfully got response http status.")
 
 			deniedResponse := &ext_authz_v3.DeniedHttpResponse{
 				Headers: responseHeaders,

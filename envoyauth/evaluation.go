@@ -39,17 +39,25 @@ func Eval(ctx context.Context, evalContext EvalContext, input ast.Value, result 
 		var txnClose TransactionCloser
 		txn, txnClose, err = result.GetTxn(ctx, evalContext.Store())
 		if err != nil {
-			logger.WithFields(map[string]interface{}{"err": err}).Error("Unable to start new storage transaction.")
+			logger.WithFields(map[string]interface{}{"err": err}).Error(
+				"******** ERROR: Eval() unable to start new storage transaction.")
 			return err
 		}
+		logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+			"******** INFO: Eval() Storage transaction started successfully.")
+
 		defer txnClose(ctx, err)
 		result.Txn = txn
 	}
 
 	err = getRevision(ctx, evalContext.Store(), result.Txn, result)
 	if err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Eval() failed to get revision.")
 		return err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Eval() got revision successfully.")
 
 	result.TxnID = result.Txn.ID()
 
@@ -61,8 +69,12 @@ func Eval(ctx context.Context, evalContext EvalContext, input ast.Value, result 
 
 	err = constructPreparedQuery(evalContext, result.Txn, result.Metrics, opts)
 	if err != nil {
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Eval(): constructPreparedQuery() returned with error.")
 		return err
 	}
+	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
+		"******** INFO: Eval() constructPreparedQuery() returned successfully.")
 
 	ph := hook{logger: logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID})}
 
@@ -78,10 +90,16 @@ func Eval(ctx context.Context, evalContext EvalContext, input ast.Value, result 
 
 	switch {
 	case err != nil:
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Eval() evalContext.PreparedQuery().Eval() returned with error.")
 		return err
 	case len(rs) == 0:
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Eval() evalContext.PreparedQuery().Eval() returned with undefined decision.")
 		return fmt.Errorf("undefined decision")
 	case len(rs) > 1:
+		logger.WithFields(map[string]interface{}{"err": err}).Error(
+			"******** ERROR: Eval() evalContext.PreparedQuery().Eval() returned with multiple evaluation results.")
 		return fmt.Errorf("multiple evaluation results")
 	}
 
