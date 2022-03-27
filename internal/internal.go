@@ -295,7 +295,6 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 	if err != nil {
 		logger.WithFields(map[string]interface{}{"err": err}).Error(
 			"******** ERROR: Check() Unable to start new evaluation.")
-		logger.WithFields(map[string]interface{}{"err": err}).Error("Unable to start new evaluation.")
 		return nil, func() *rpc_status.Status { return nil }, err
 	}
 	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
@@ -305,7 +304,6 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 	if err != nil {
 		logger.WithFields(map[string]interface{}{"err": err}).Error(
 			"******** ERROR: Check() Unable to start new storage transaction.")
-		logger.WithFields(map[string]interface{}{"err": err}).Error("Unable to start new storage transaction.")
 		return nil, func() *rpc_status.Status { return nil }, err
 	}
 	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
@@ -335,9 +333,9 @@ func (p *envoyExtAuthzGrpcServer) check(ctx context.Context, req interface{}) (*
 	}
 
 	if ctx.Err() != nil {
+		err = errors.Wrap(ctx.Err(), "check request timed out before query execution")
 		logger.WithFields(map[string]interface{}{"err": err}).Error(
 			"******** ERROR: Check() Failed to check request timed out before query execution.")
-		err = errors.Wrap(ctx.Err(), "check request timed out before query execution")
 		return nil, stop, err
 	}
 	logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(

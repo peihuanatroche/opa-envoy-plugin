@@ -94,11 +94,11 @@ func Eval(ctx context.Context, evalContext EvalContext, input ast.Value, result 
 			"******** ERROR: Eval() evalContext.PreparedQuery().Eval() returned with error.")
 		return err
 	case len(rs) == 0:
-		logger.WithFields(map[string]interface{}{"err": err}).Error(
+		logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
 			"******** ERROR: Eval() evalContext.PreparedQuery().Eval() returned with undefined decision.")
 		return fmt.Errorf("undefined decision")
 	case len(rs) > 1:
-		logger.WithFields(map[string]interface{}{"err": err}).Error(
+		logger.WithFields(map[string]interface{}{"decision-id": result.DecisionID}).Debug(
 			"******** ERROR: Eval() evalContext.PreparedQuery().Eval() returned with multiple evaluation results.")
 		return fmt.Errorf("multiple evaluation results")
 	}
